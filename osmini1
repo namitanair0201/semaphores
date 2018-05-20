@@ -1,0 +1,113 @@
+import java.io.*;
+import java.lang.*;
+import java.util.concurrent.Semaphore;
+
+class osmini1
+{
+public static void main(String args[])
+{
+int i;
+Weather w[]=new Weather[4];
+for(i=0;i<3;i++)
+	w[i]=new Weather(i,"machine");
+w[3]=new Weather(3,"calculator");
+for(i=3;i>=0;i--)
+	w[i].start();
+}
+}
+
+class Weather extends Thread
+{
+ static Semaphore mutex=new Semaphore(1);
+ static Semaphore ready=new Semaphore(0);
+ static int buffer[]=new int[4];
+ int id;
+ String type;
+ static int Mcount=0;
+
+ Weather(int i,String s)
+ {
+  id=i;
+  type=s;
+ }
+
+ public void run()
+ {
+  if(type=="machine")
+  {
+   machine();
+  }
+  else
+  {
+   calculator();
+  }
+ }
+ 
+ public void machine()
+ {
+  try{
+      mutex.acquire();
+      buffer[Mcount]=1;
+      Mcount++;
+      addObservation();
+      mutex.release();
+      ready.release();
+      finished();
+     } 
+	 catch (InterruptedException e) 
+	 {
+                System.out.println(e.getMessage());
+     }
+ }
+ public void calculator()
+ {
+  while(Mcount!=3)
+  {
+   System.out.println("Calculator is waiting.");
+   try
+   {
+   ready.acquire();
+   }
+   catch (InterruptedException e)  
+   {
+                System.out.println(e.getMessage());
+   }
+  }
+  try
+  {
+   mutex.acquire();
+   getResults();
+   mutex.release();
+  }
+  catch (InterruptedException e) 
+  {
+                System.out.println(e.getMessage());
+  }
+ }
+
+ public void addObservation()
+ {
+  System.out.println("Machine "+ id + " is processing.");
+  
+ }
+
+ public void getResults()
+ {
+  System.out.println("Calculator is taking values from the buffer.");
+  System.out.println("Performing calculations.");
+  try
+  {
+   Thread.sleep(1000);
+  }
+  catch (InterruptedException e) 
+  {
+                System.out.println(e.getMessage());
+  }
+  System.out.println("Output predicted.");
+ }
+
+ public void finished()
+ {
+  System.out.println("Machine "+ id + " has finished processing. Data placed inside buffer.");
+ }
+}
